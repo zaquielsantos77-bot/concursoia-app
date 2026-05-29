@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ConcursoIA++ — Simulados com Inteligência Artificial</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- ══ MERCADO PAGO SDK ══ -->
+<script src="https://sdk.mercadopago.com/js/v2"></script>
 <style>
 :root{
   --bg:#07080F;--bg2:#0D0F1A;--bg3:#13152200;--card:#0F1120;
@@ -257,7 +260,137 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
   .resultado-grid{grid-template-columns:1fr 1fr}
   .nav-tabs{gap:2px}.tab{padding:6px 9px;font-size:12px}
   .nav-badge{padding:6px 10px;font-size:11px}
+  .mp-overlay{padding:8px 8px 60px;align-items:flex-start}
+  .mp-modal{border-radius:16px;margin:8px auto}
+  .mp-body{padding:14px}
+  .mp-metodos{grid-template-columns:1fr 1fr}
+  .mp-row{grid-template-columns:1fr 1fr}
+  .planos-grid{grid-template-columns:1fr}
 }
+
+/* ══════════════════════════════
+   GAMIFICATION & XP
+══════════════════════════════ */
+.xp-bar-wrap{height:4px;background:rgba(99,120,255,.15);border-radius:2px;overflow:hidden;margin-top:3px}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:2px;transition:width 1s ease}
+.level-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.25);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--gold)}
+.streak-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,78,78,.1);border:1px solid rgba(255,78,78,.2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:#FF6B6B}
+
+/* XP popup animation */
+.xp-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);background:linear-gradient(135deg,rgba(99,120,255,.95),rgba(0,212,255,.95));color:#fff;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;padding:18px 32px;border-radius:18px;z-index:2000;pointer-events:none;opacity:0;transition:all .3s;text-align:center}
+.xp-popup.show{opacity:1;transform:translate(-50%,-60%) scale(1)}
+.xp-popup.hide{opacity:0;transform:translate(-50%,-80%) scale(.9)}
+
+/* Achievements */
+.achievement-toast{position:fixed;top:80px;right:20px;background:linear-gradient(135deg,#1A1800,#2A2A00);border:1px solid rgba(255,184,0,.4);border-radius:14px;padding:14px 18px;z-index:1500;display:flex;align-items:center;gap:12px;transform:translateX(120%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:280px}
+.achievement-toast.show{transform:translateX(0)}
+.ach-ico{font-size:28px;flex-shrink:0}
+.ach-title{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.ach-name{font-size:14px;font-weight:600;color:var(--text)}
+
+/* ══════════════════════════════
+   GAMIFICATION HUD (top da home)
+══════════════════════════════ */
+.gam-hud{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px 20px;margin:16px 20px 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.gam-hud-item{display:flex;align-items:center;gap:8px;flex:1;min-width:100px}
+.gam-hud-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.gam-hud-info{flex:1;min-width:0}
+.gam-hud-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;line-height:1;margin-bottom:2px}
+.gam-hud-label{font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.gam-divider{width:1px;height:36px;background:var(--border);flex-shrink:0}
+
+/* Daily Mission */
+.missions-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin:12px 20px 0}
+.mission-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.mission-item:last-child{border-bottom:none;padding-bottom:0}
+.mission-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mission-info{flex:1;min-width:0}
+.mission-name{font-size:13px;font-weight:500;margin-bottom:4px}
+.mission-prog{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.mission-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.mission-xp{font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap;flex-shrink:0}
+.mission-done{font-size:18px;flex-shrink:0}
+
+/* ══════════════════════════════
+   AI INSIGHTS CARD
+══════════════════════════════ */
+.ai-insight{background:linear-gradient(135deg,rgba(99,120,255,.08),rgba(0,212,255,.04));border:1px solid var(--border2);border-radius:16px;padding:20px;margin:12px 20px 0;position:relative;overflow:hidden}
+.ai-insight::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(0,212,255,.1),transparent 70%);pointer-events:none}
+.ai-insight-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-insight-tag span{width:6px;height:6px;background:var(--cyan);border-radius:50%;animation:blink 1.5s infinite}
+.ai-insight-msg{font-size:14px;color:var(--text);line-height:1.65;margin-bottom:14px}
+.ai-insight-msg strong{color:var(--gold)}
+.ai-insight-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ai-btn{font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+.ai-btn.primary{background:rgba(99,120,255,.2);color:var(--blue);border:1px solid var(--border2)}
+.ai-btn.primary:hover{background:rgba(99,120,255,.3)}
+.ai-btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.ai-btn.ghost:hover{color:var(--text)}
+
+/* ══════════════════════════════
+   PREMIUM DASHBOARD UPGRADE
+══════════════════════════════ */
+.readiness-ring{display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.ring-svg{flex-shrink:0}
+.ring-info{flex:1}
+.ring-score{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--cyan);line-height:1;margin-bottom:4px}
+.ring-label{font-size:13px;font-weight:600;margin-bottom:6px}
+.ring-sub{font-size:12px;color:var(--muted);line-height:1.6}
+.ring-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ring-tag{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px}
+
+/* Heatmap */
+.heatmap-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:12px}
+.hm-cell{aspect-ratio:1;border-radius:3px;cursor:default;transition:transform .15s}
+.hm-cell:hover{transform:scale(1.2)}
+
+/* Weak subject alert */
+.weak-alert{background:rgba(255,78,78,.07);border:1px solid rgba(255,78,78,.2);border-radius:13px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .2s}
+.weak-alert:hover{background:rgba(255,78,78,.12)}
+.weak-alert-ico{font-size:22px;flex-shrink:0}
+.weak-alert-info{flex:1}
+.weak-alert-title{font-size:13px;font-weight:600;color:#FF6B6B;margin-bottom:2px}
+.weak-alert-sub{font-size:12px;color:var(--muted)}
+.weak-alert-cta{font-size:12px;font-weight:600;color:var(--blue);white-space:nowrap;flex-shrink:0}
+
+/* ══════════════════════════════
+   MOBILE BOTTOM NAV
+══════════════════════════════ */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(7,8,15,.96);backdrop-filter:blur(20px);border-top:1px solid var(--border);z-index:300;padding:8px 4px 10px;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.mobile-nav-inner{display:flex;justify-content:space-around;align-items:center;max-width:480px;margin:0 auto}
+.mnav-btn{background:none;border:none;cursor:pointer;padding:6px 12px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .2s;min-width:52px}
+.mnav-btn.active .mnav-ico{color:var(--blue)}
+.mnav-btn.active .mnav-lbl{color:var(--blue)}
+.mnav-btn.active{background:rgba(99,120,255,.1)}
+.mnav-ico{font-size:20px;line-height:1;transition:transform .2s}
+.mnav-btn:active .mnav-ico{transform:scale(.85)}
+.mnav-lbl{font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.02em;transition:color .2s}
+.mnav-dot{position:absolute;top:4px;right:8px;width:6px;height:6px;background:var(--blue);border-radius:50%;border:1.5px solid var(--bg)}
+@media(max-width:768px){
+  .mobile-nav{display:block}
+  nav .nav-tabs{display:none}
+  body{padding-bottom:72px}
+  .gam-hud{margin:12px 14px 0}
+  .missions-box,.ai-insight{margin-left:14px;margin-right:14px}
+}
+
+/* ══════════════════════════════
+   MICROINTERACTIONS
+══════════════════════════════ */
+.feat-card{transition:border-color .2s,transform .2s,box-shadow .2s}
+.feat-card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 30px rgba(99,120,255,.08)}
+.concurso-card{transition:all .22s cubic-bezier(.34,1.56,.64,1)}
+.concurso-card:hover{border-color:var(--border2);transform:translateX(6px)}
+.dcard{transition:border-color .2s,transform .2s}
+.dcard:hover{border-color:var(--border2);transform:translateY(-2px)}
+.btn-main{transition:all .22s cubic-bezier(.34,1.56,.64,1)}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,120,255,.3)}
+.btn-main:active{transform:scale(.97)}
+
+@keyframes spin2{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes xpRain{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.3)}}
+
 </style>
 </head>
 <body>
@@ -381,6 +514,68 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
 
 <!-- ══ HOME ══ -->
 <div id="page-home" class="page active">
+
+  <!-- ── GAMIFICATION HUD ── -->
+  <div class="gam-hud" id="gam-hud">
+    <div class="gam-hud-item">
+      <div class="gam-hud-ico" style="background:rgba(255,184,0,.12)">⚡</div>
+      <div class="gam-hud-info">
+        <div class="gam-hud-val" id="hud-xp" style="color:var(--gold)">1.240 XP</div>
+        <div class="gam-hud-label">Nível <span id="hud-nivel">8</span></div>
+        <div class="xp-bar-wrap" style="margin-top:4px"><div class="xp-bar-fill" id="hud-xpbar" style="width:62%"></div></div>
+      </div>
+    </div>
+    <div class="gam-divider"></div>
+    <div class="gam-hud-item">
+      <div class="gam-hud-ico" style="background:rgba(255,78,78,.1)">🔥</div>
+      <div class="gam-hud-info">
+        <div class="gam-hud-val" id="hud-streak" style="color:#FF6B6B">7 dias</div>
+        <div class="gam-hud-label">Sequência ativa</div>
+      </div>
+    </div>
+    <div class="gam-divider"></div>
+    <div class="gam-hud-item">
+      <div class="gam-hud-ico" style="background:rgba(0,230,118,.1)">🎯</div>
+      <div class="gam-hud-info">
+        <div class="gam-hud-val" id="hud-meta" style="color:var(--green)">2/3</div>
+        <div class="gam-hud-label">Metas hoje</div>
+      </div>
+    </div>
+    <div class="gam-divider"></div>
+    <div class="gam-hud-item">
+      <div class="gam-hud-ico" style="background:rgba(99,120,255,.12)">🏅</div>
+      <div class="gam-hud-info">
+        <div class="gam-hud-val" id="hud-rank" style="color:var(--blue)">#14</div>
+        <div class="gam-hud-label">Ranking geral</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI INSIGHT ── -->
+  <div class="ai-insight" id="ai-insight-box">
+    <div class="ai-insight-tag"><span></span>IA Adaptativa · Insight do dia</div>
+    <div class="ai-insight-msg" id="ai-insight-msg">
+      Você está com dificuldade em <strong>Direito Constitucional</strong> (55%). 
+      Um treino personalizado foi gerado com as suas principais lacunas. Resolva agora para ganhar <strong>+80 XP</strong>.
+    </div>
+    <div class="ai-insight-actions">
+      <button class="ai-btn primary" onclick="selecionarConcurso('INSS');showPage('simulado')">⚡ Treino personalizado</button>
+      <button class="ai-btn ghost" onclick="showPage('desempenho')">Ver análise completa</button>
+    </div>
+  </div>
+
+  <!-- ── MISSÕES DIÁRIAS ── -->
+  <div class="missions-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div class="sec-tag" style="margin-bottom:2px">Missões do dia</div>
+        <div style="font-size:12px;color:var(--muted)">Reseta em <span id="missao-timer" style="color:var(--gold);font-weight:600">14:23:07</span></div>
+      </div>
+      <div class="level-badge" id="missoes-xp-total">+240 XP disponíveis</div>
+    </div>
+    <div id="missions-list"></div>
+  </div>
+
   <div class="hero">
     <div class="hero-pill"><span class="ai-dot"></span> Powered by Inteligência Artificial</div>
     <h1>Passe no concurso<br>com <em>IA do seu lado</em></h1>
@@ -392,7 +587,7 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
   </div>
 
   <div class="stats-row">
-    <div class="stat"><div class="stat-n">47.200</div><div class="stat-l">Questões geradas</div></div>
+    <div class="stat"><div class="stat-n" id="stat-questoes">47.200</div><div class="stat-l">Questões geradas</div></div>
     <div class="stat"><div class="stat-n">12.800</div><div class="stat-l">Usuários ativos</div></div>
     <div class="stat"><div class="stat-n">89%</div><div class="stat-l">Taxa de aprovação</div></div>
     <div class="stat"><div class="stat-n">320+</div><div class="stat-l">Concursos disponíveis</div></div>
@@ -594,6 +789,45 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
     <div class="sec-tag" style="padding-top:4px">Seu progresso</div>
     <div class="sec-h">Análise de desempenho</div>
 
+    <!-- Readiness Score -->
+    <div class="readiness-ring">
+      <svg class="ring-svg" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(99,120,255,.12)" stroke-width="7"/>
+        <circle cx="40" cy="40" r="34" fill="none" stroke="var(--cyan)" stroke-width="7"
+          stroke-dasharray="213.6" stroke-dashoffset="53.4"
+          stroke-linecap="round" transform="rotate(-90 40 40)"/>
+        <text x="40" y="45" text-anchor="middle" fill="var(--cyan)" font-family="Syne,sans-serif" font-size="16" font-weight="800">75%</text>
+      </svg>
+      <div class="ring-info">
+        <div class="ring-score">Pronto para provar</div>
+        <div class="ring-label">Índice de aprovação estimado</div>
+        <div class="ring-sub">Baseado em 23 simulados e 318 questões respondidas.</div>
+        <div class="ring-tags">
+          <span class="ring-tag" style="background:rgba(0,230,118,.1);color:var(--green)">✓ Português forte</span>
+          <span class="ring-tag" style="background:rgba(255,78,78,.1);color:var(--red)">⚠ Direito Const.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas de matéria fraca -->
+    <div class="weak-alert" onclick="showPage('simulado')">
+      <div class="weak-alert-ico">⚠️</div>
+      <div class="weak-alert-info">
+        <div class="weak-alert-title">Conhecimentos Específicos em queda</div>
+        <div class="weak-alert-sub">48% de aproveitamento — abaixo da média de corte (60%). Treine agora.</div>
+      </div>
+      <div class="weak-alert-cta">Treinar →</div>
+    </div>
+    <div class="weak-alert" onclick="showPage('simulado')">
+      <div class="weak-alert-ico">📉</div>
+      <div class="weak-alert-info">
+        <div class="weak-alert-title">Dir. Constitucional caiu 8% esta semana</div>
+        <div class="weak-alert-sub">55% → 47% em 5 dias. Revise os fundamentos.</div>
+      </div>
+      <div class="weak-alert-cta">Revisar →</div>
+    </div>
+
+    <!-- Stats cards -->
     <div class="dash-grid">
       <div class="dcard"><div class="dcard-n" style="color:var(--blue)">23</div><div class="dcard-l">Simulados feitos</div></div>
       <div class="dcard"><div class="dcard-n" style="color:var(--green)">74%</div><div class="dcard-l">Aproveitamento geral</div></div>
@@ -601,13 +835,28 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
       <div class="dcard"><div class="dcard-n" style="color:var(--cyan)">12h</div><div class="dcard-l">Horas estudadas</div></div>
     </div>
 
-    <div class="materia-bars">
-      <div class="sec-tag">Desempenho por matéria</div>
-      <div style="margin-top:16px">
-        <div id="materia-bars-content"></div>
+    <!-- Heatmap de consistência -->
+    <div class="heatmap-wrap">
+      <div class="sec-tag" style="margin-bottom:4px">Consistência de estudos</div>
+      <div style="font-size:12px;color:var(--muted)">Últimos 28 dias</div>
+      <div class="heatmap-grid" id="heatmap-grid"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--muted)">
+        <span>Menos</span>
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(99,120,255,.08)"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(99,120,255,.25)"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:rgba(99,120,255,.5)"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:var(--blue)"></div>
+        <span>Mais</span>
       </div>
     </div>
 
+    <!-- Barras por matéria -->
+    <div class="materia-bars">
+      <div class="sec-tag">Desempenho por matéria</div>
+      <div style="margin-top:16px"><div id="materia-bars-content"></div></div>
+    </div>
+
+    <!-- Histórico -->
     <div class="historico">
       <div class="sec-tag" style="margin-bottom:12px">Histórico de simulados</div>
       <div id="historico-list"></div>
@@ -625,6 +874,40 @@ nav{position:sticky;top:0;z-index:200;background:rgba(7,8,15,0.9);backdrop-filte
     <div class="sec-tag">Esta semana</div>
     <div class="sec-h" style="margin-bottom:20px">Cronograma semanal</div>
     <div class="semana-grid" id="semana-grid"></div>
+  </div>
+</div>
+
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mnav-btn active" id="mnav-home" onclick="showPage('home');setMnav('home')">
+      <span class="mnav-ico">🏠</span><span class="mnav-lbl">Início</span>
+    </button>
+    <button class="mnav-btn" id="mnav-simulado" onclick="showPage('simulado');setMnav('simulado')">
+      <span class="mnav-ico">✏️</span><span class="mnav-lbl">Simulado</span>
+    </button>
+    <button class="mnav-btn" id="mnav-desempenho" onclick="showPage('desempenho');setMnav('desempenho')">
+      <span class="mnav-ico">📊</span><span class="mnav-lbl">Progresso</span>
+    </button>
+    <button class="mnav-btn" id="mnav-agente" onclick="showPage('agente');setMnav('agente')" style="position:relative">
+      <span class="mnav-ico">🤖</span><span class="mnav-lbl">Agente</span>
+      <span class="mnav-dot"></span>
+    </button>
+    <button class="mnav-btn" id="mnav-planos" onclick="showPage('planos');setMnav('planos')" style="color:var(--gold)">
+      <span class="mnav-ico">💎</span><span class="mnav-lbl">Premium</span>
+    </button>
+  </div>
+</nav>
+
+<!-- XP Popup -->
+<div class="xp-popup" id="xp-popup">+0 XP ⚡</div>
+
+<!-- Achievement Toast -->
+<div class="achievement-toast" id="ach-toast">
+  <div class="ach-ico" id="ach-ico">🏅</div>
+  <div>
+    <div class="ach-title">Conquista desbloqueada!</div>
+    <div class="ach-name" id="ach-name">Primeira semana</div>
   </div>
 </div>
 
@@ -1280,6 +1563,214 @@ function verificarRateLimit(uid) {
 initFirebase();
 
 // ══════════════════════════════════════════════
+// GAMIFICATION ENGINE
+// ══════════════════════════════════════════════
+const GAM = {
+  xp: parseInt(localStorage.getItem('gam_xp') || '1240'),
+  streak: parseInt(localStorage.getItem('gam_streak') || '7'),
+  simulados: parseInt(localStorage.getItem('gam_simulados') || '23'),
+  missoes: JSON.parse(localStorage.getItem('gam_missoes') || 'null'),
+};
+
+function gamSave() {
+  localStorage.setItem('gam_xp', GAM.xp);
+  localStorage.setItem('gam_streak', GAM.streak);
+  localStorage.setItem('gam_simulados', GAM.simulados);
+  localStorage.setItem('gam_missoes', JSON.stringify(GAM.missoes));
+}
+
+function getNivel(xp) {
+  return Math.floor(xp / 200) + 1;
+}
+
+function getXpProximoNivel(xp) {
+  const nivel = getNivel(xp);
+  const xpBase = (nivel - 1) * 200;
+  return Math.round(((xp - xpBase) / 200) * 100);
+}
+
+function ganharXP(qtd, motivo) {
+  GAM.xp += qtd;
+  gamSave();
+  renderHUD();
+
+  // Popup animado
+  const pop = document.getElementById('xp-popup');
+  if (pop) {
+    pop.textContent = '+' + qtd + ' XP ⚡';
+    pop.classList.add('show');
+    setTimeout(() => { pop.classList.remove('show'); pop.classList.add('hide'); }, 1400);
+    setTimeout(() => pop.classList.remove('hide'), 1800);
+  }
+
+  // Verifica conquistas
+  verificarConquistas();
+}
+
+function renderHUD() {
+  const nivel = getNivel(GAM.xp);
+  const pct   = getXpProximoNivel(GAM.xp);
+  const el = (id) => document.getElementById(id);
+  if (el('hud-xp'))    el('hud-xp').textContent    = GAM.xp.toLocaleString('pt-BR') + ' XP';
+  if (el('hud-nivel')) el('hud-nivel').textContent  = nivel;
+  if (el('hud-xpbar')) el('hud-xpbar').style.width  = pct + '%';
+  if (el('hud-streak'))el('hud-streak').textContent = GAM.streak + ' dias';
+}
+
+// ── Missões diárias ──
+const MISSOES_BASE = [
+  { id:'sim1',   ico:'✏️', nome:'Complete 1 simulado',       meta:1,  prog:0, xp:80,  cor:'var(--blue)'  },
+  { id:'q20',    ico:'🎯', nome:'Responda 20 questões',       meta:20, prog:14,xp:60,  cor:'var(--cyan)'  },
+  { id:'streak', ico:'🔥', nome:'Mantenha sua sequência',     meta:1,  prog:1, xp:50,  cor:'var(--red)'   },
+  { id:'rev',    ico:'📖', nome:'Revise 1 gabarito comentado',meta:1,  prog:0, xp:50,  cor:'var(--gold)'  },
+];
+
+function renderMissoes() {
+  const el = document.getElementById('missions-list');
+  if (!el) return;
+  const missoes = GAM.missoes || MISSOES_BASE;
+  el.innerHTML = missoes.map(m => {
+    const done = m.prog >= m.meta;
+    const pct  = Math.min(100, Math.round((m.prog / m.meta) * 100));
+    return `<div class="mission-item">
+      <div class="mission-ico" style="background:${done ? 'rgba(0,230,118,.12)' : 'rgba(99,120,255,.08)'}">${done ? '✅' : m.ico}</div>
+      <div class="mission-info">
+        <div class="mission-name" style="color:${done ? 'var(--muted)' : 'var(--text)'}${done ? ';text-decoration:line-through' : ''}">${m.nome}</div>
+        <div class="mission-prog">
+          <div class="mission-fill" style="width:${pct}%;background:${done ? 'var(--green)' : m.cor}"></div>
+        </div>
+      </div>
+      <div class="${done ? 'mission-done' : 'mission-xp'}">${done ? '✓' : '+' + m.xp + ' XP'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Conquistas ──
+const CONQUISTAS = [
+  { id:'week1',   ico:'🔥', nome:'7 dias seguidos!',        check:() => GAM.streak >= 7     },
+  { id:'sim10',   ico:'🎓', nome:'10 simulados completos',  check:() => GAM.simulados >= 10 },
+  { id:'xp1000',  ico:'⚡', nome:'1000 XP alcançado',       check:() => GAM.xp >= 1000      },
+  { id:'xp5000',  ico:'👑', nome:'Nível Diamante — 5000 XP',check:() => GAM.xp >= 5000      },
+];
+
+function verificarConquistas() {
+  const desbloqueadas = JSON.parse(localStorage.getItem('gam_conquistas') || '[]');
+  CONQUISTAS.forEach(c => {
+    if (!desbloqueadas.includes(c.id) && c.check()) {
+      desbloqueadas.push(c.id);
+      localStorage.setItem('gam_conquistas', JSON.stringify(desbloqueadas));
+      mostrarConquista(c);
+    }
+  });
+}
+
+function mostrarConquista(c) {
+  const t = document.getElementById('ach-toast');
+  if (!t) return;
+  document.getElementById('ach-ico').textContent = c.ico;
+  document.getElementById('ach-name').textContent = c.nome;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ── Heatmap de estudos ──
+function renderHeatmap() {
+  const el = document.getElementById('heatmap-grid');
+  if (!el) return;
+  const intensidades = Array.from({length:28}, (_,i) => {
+    const rand = Math.random();
+    if (i > 24) return 0; // dias futuros
+    if (rand < .15) return 0;
+    if (rand < .35) return 1;
+    if (rand < .65) return 2;
+    return 3;
+  });
+  const cores = [
+    'rgba(99,120,255,.06)',
+    'rgba(99,120,255,.22)',
+    'rgba(99,120,255,.5)',
+    'var(--blue)'
+  ];
+  el.innerHTML = intensidades.map((v,i) => {
+    const title = i < 25 ? `Dia ${i+1}: ${['Sem estudo','Estudo leve','Estudo moderado','Estudo intenso'][v]}` : '';
+    return `<div class="hm-cell" title="${title}" style="background:${cores[v]}"></div>`;
+  }).join('');
+}
+
+// ── Contador de missão ──
+function tickMissaoTimer() {
+  const el = document.getElementById('missao-timer');
+  if (!el) return;
+  const agora = new Date();
+  const meia  = new Date(agora); meia.setHours(24,0,0,0);
+  const diff  = meia - agora;
+  const h = Math.floor(diff/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(tickMissaoTimer, 1000);
+tickMissaoTimer();
+
+// ── Mobile nav helper ──
+function setMnav(id) {
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('mnav-' + id);
+  if (btn) btn.classList.add('active');
+}
+
+// Patch showPage para sincronizar mobile nav
+const _origShowPage = showPage;
+window.showPage = function(id) {
+  _origShowPage(id);
+  setMnav(id);
+  // Ganhar XP ao abrir simulado
+  if (id === 'desempenho') renderHeatmap();
+};
+
+// ── Hook finalizarProva para XP ──
+const _origFinalizar = finalizarProva;
+window.finalizarProva = function() {
+  _origFinalizar();
+  GAM.simulados++;
+  gamSave();
+  // XP baseado em questões
+  const xpGanho = questoes.length * 4;
+  setTimeout(() => ganharXP(xpGanho, 'simulado'), 600);
+  // Progresso de missão
+  if (GAM.missoes) {
+    GAM.missoes.forEach(m => { if(m.id === 'sim1' && m.prog < m.meta) m.prog = 1; });
+    gamSave();
+    renderMissoes();
+  }
+};
+
+// ── Stat counter animado (home) ──
+function animarContador(el, alvo, duracao) {
+  if (!el) return;
+  const inicio = Date.now();
+  const frame = () => {
+    const prog = Math.min(1, (Date.now()-inicio)/duracao);
+    const eased = 1 - Math.pow(1-prog, 3);
+    el.textContent = Math.floor(eased * alvo).toLocaleString('pt-BR');
+    if (prog < 1) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// ── Init gamificação ──
+function initGamificacao() {
+  renderHUD();
+  renderMissoes();
+  renderHeatmap();
+  // Anima contadores após 400ms
+  setTimeout(() => {
+    animarContador(document.getElementById('stat-questoes'), 47200, 1400);
+  }, 400);
+}
+initGamificacao();
+
+// ══════════════════════════════════════════════
 // AGENTE DE CONCURSOS — Busca e atualiza via IA
 // ══════════════════════════════════════════════
 
@@ -1709,9 +2200,9 @@ function filtrarAgente(status) {
 .btn-assinar.gold:hover{opacity:.9}
 
 /* Modal de checkout */
-.mp-overlay{position:fixed;inset:0;background:rgba(7,8,15,.85);backdrop-filter:blur(8px);z-index:3000;display:none;align-items:center;justify-content:center;padding:20px}
+.mp-overlay{position:fixed;inset:0;background:rgba(7,8,15,.85);backdrop-filter:blur(8px);z-index:3000;display:none;align-items:flex-start;justify-content:center;padding:16px 16px 40px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .mp-overlay.open{display:flex;animation:fadeUp .25s ease}
-.mp-modal{background:var(--card);border:1px solid var(--border2);border-radius:24px;width:100%;max-width:460px;overflow:hidden;animation:fadeUp .3s ease}
+.mp-modal{background:var(--card);border:1px solid var(--border2);border-radius:24px;width:100%;max-width:460px;overflow:visible;animation:fadeUp .3s ease;margin:16px auto}
 .mp-header{background:linear-gradient(135deg,rgba(99,120,255,.15),rgba(0,212,255,.06));border-bottom:1px solid var(--border);padding:22px 24px;display:flex;align-items:center;justify-content:space-between}
 .mp-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
 .mp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px}
@@ -1938,6 +2429,10 @@ function filtrarAgente(status) {
       <!-- Formulário cartão -->
       <div id="form-cc" class="mp-form">
         <div class="mp-field">
+          <label>E-mail</label>
+          <input type="email" id="mp-email-pag" placeholder="seu@email.com">
+        </div>
+        <div class="mp-field">
           <label>Número do cartão</label>
           <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" oninput="formatarCartao(this)" id="mp-num-cartao">
         </div>
@@ -1978,15 +2473,41 @@ function filtrarAgente(status) {
       <!-- Formulário Pix -->
       <div id="form-pix" style="display:none">
         <div class="mp-pix-box">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
-            Escaneie o QR Code ou copie a chave Pix abaixo.<br>
-            <strong style="color:var(--green)">Aprovação automática em segundos.</strong>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+            Preencha seus dados para gerar o QR Code.<br>
+            <strong style="color:var(--green)">Aprovação automática ao detectar o pagamento.</strong>
           </div>
-          <div class="mp-pix-qr">⚡</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-align:left;font-weight:600;letter-spacing:.04em">CHAVE PIX COPIA E COLA</div>
-          <div class="mp-pix-chave" id="mp-pix-chave">00020126580014br.gov.bcb.pix0136concursoia-pagamentos@exemplo.com5204000053039865802BR5925ConcursoIA Plataforma6009SAO PAULO62070503***6304ABCD</div>
-          <button class="mp-pix-copy" onclick="copiarPix()">📋 Copiar chave Pix</button>
-          <div style="font-size:12px;color:var(--muted);margin-top:12px">Após o pagamento, seu acesso será liberado automaticamente em até 1 minuto.</div>
+          <div class="mp-form" style="margin-bottom:14px">
+            <div class="mp-field">
+              <label>E-mail</label>
+              <input type="email" id="mp-email-pag" placeholder="seu@email.com">
+            </div>
+            <div class="mp-row">
+              <div class="mp-field">
+                <label>Nome completo</label>
+                <input type="text" id="mp-nome-pix" placeholder="Seu Nome">
+              </div>
+              <div class="mp-field">
+                <label>CPF</label>
+                <input type="text" id="mp-cpf-pix" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)">
+              </div>
+            </div>
+          </div>
+          <button class="btn-pagar cc" id="btn-pagar-pix" onclick="processarPagamento('pix')" style="background:linear-gradient(135deg,#00b300,#007700);margin-bottom:14px">
+            ⚡ Gerar QR Code Pix
+          </button>
+          <!-- QR e copia-cola aparecem após gerar -->
+          <div id="mp-pix-resultado" style="display:none">
+            <div class="mp-pix-qr" id="mp-pix-qr" style="margin-bottom:12px">⚡</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-align:left;font-weight:600;letter-spacing:.04em">COPIA E COLA</div>
+            <div class="mp-pix-chave" id="mp-pix-chave"></div>
+            <button class="mp-pix-copy" onclick="copiarPix()">📋 Copiar chave Pix</button>
+            <div id="mp-pix-expira" style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center"></div>
+            <input type="hidden" id="mp-pix-id">
+            <div style="font-size:12px;color:var(--green);margin-top:10px;text-align:center;font-weight:500">
+              ⏳ Aguardando confirmação do pagamento...
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1995,12 +2516,22 @@ function filtrarAgente(status) {
         <div class="mp-pix-box">
           <div style="font-size:36px;margin-bottom:12px">📄</div>
           <div style="font-size:14px;font-weight:600;margin-bottom:8px">Boleto Bancário</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px">O boleto vence em 3 dias úteis. Após o pagamento, o acesso é liberado em até 2 dias úteis.</div>
-          <div class="mp-field" style="text-align:left;margin-bottom:12px">
-            <label>CPF do comprador</label>
-            <input type="text" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)" id="mp-cpf-boleto">
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px">O boleto vence em 3 dias úteis. Acesso liberado em até 2 dias úteis após o pagamento.</div>
+          <div class="mp-form">
+            <div class="mp-field">
+              <label>E-mail</label>
+              <input type="email" id="mp-email-boleto" placeholder="seu@email.com">
+            </div>
+            <div class="mp-field">
+              <label>Nome completo</label>
+              <input type="text" id="mp-nome-boleto" placeholder="Seu Nome Completo">
+            </div>
+            <div class="mp-field">
+              <label>CPF do comprador</label>
+              <input type="text" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)" id="mp-cpf-boleto">
+            </div>
           </div>
-          <button class="btn-pagar cc" style="background:linear-gradient(135deg,#2D3748,#4A5568)" onclick="processarPagamento('boleto')">
+          <button class="btn-pagar cc" style="background:linear-gradient(135deg,#2D3748,#4A5568);margin-top:14px" id="btn-pagar-boleto" onclick="processarPagamento('boleto')">
             📄 Gerar boleto
           </button>
         </div>
@@ -2014,7 +2545,7 @@ function filtrarAgente(status) {
             Você será redirecionado para o Mercado Pago para concluir o pagamento com segurança.<br>
             <strong style="color:var(--text)">Aceita saldo MP, crédito parcelado e mais.</strong>
           </div>
-          <button class="btn-pagar cc" style="background:#009EE3" onclick="processarPagamento('mp')">
+          <button class="btn-pagar cc" style="background:#009EE3" id="btn-pagar-mp" onclick="processarPagamento('mp')">
             Ir para o Mercado Pago →
           </button>
         </div>
@@ -2032,10 +2563,20 @@ function filtrarAgente(status) {
 </div><!-- /mp-overlay -->
 
 <script>
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// CONFIGURAÇÃO — altere apenas aqui
+// ══════════════════════════════════════════════════════════════
+
+// URL do seu backend (rode server.js)
+const BACKEND_URL = 'https://concursoia-backend-production.up.railway.app';
+
+// Public Key do Mercado Pago (busca automaticamente do backend)
+let mp = null; // instância do SDK MP — inicializada em initMP()
+
+// ══════════════════════════════════════════════════════════════
 // PLANOS — lógica
-// ══════════════════════════════════════════
-let periodoAtual = 'mensal'; // 'mensal' | 'anual'
+// ══════════════════════════════════════════════════════════════
+let periodoAtual     = 'mensal';
 let planoSelecionado = null;
 
 const PRECOS = {
@@ -2045,53 +2586,71 @@ const PRECOS = {
 };
 const NOMES_PLANO = { basico:'Básico', pro:'Pro', vitalicio:'Vitalício' };
 
+// Inicializa SDK do MP buscando a public key do backend
+async function initMP() {
+  try {
+    const r = await fetch(BACKEND_URL + '/mp/public-key');
+    if (!r.ok) throw new Error('Backend offline');
+    const { publicKey } = await r.json();
+    mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
+    console.info('[MP] SDK inicializado ✅');
+  } catch (e) {
+    console.warn('[MP] Backend indisponível — pagamentos desativados:', e.message);
+  }
+}
+initMP();
+
+// ── Toggle mensal/anual ──
 function togglePeriodo() {
   periodoAtual = periodoAtual === 'mensal' ? 'anual' : 'mensal';
-  const t = document.getElementById('toggle-periodo');
-  t.classList.toggle('anual', periodoAtual === 'anual');
+  document.getElementById('toggle-periodo').classList.toggle('anual', periodoAtual === 'anual');
   document.getElementById('lbl-mensal').classList.toggle('active', periodoAtual === 'mensal');
-  document.getElementById('lbl-anual').classList.toggle('active', periodoAtual === 'anual');
+  document.getElementById('lbl-anual').classList.toggle('active',  periodoAtual === 'anual');
   atualizarPrecos();
 }
 
 function atualizarPrecos() {
   ['basico','pro'].forEach(p => {
-    const v = PRECOS[p][periodoAtual];
-    const inteiro = Math.floor(v);
-    const cents   = String(Math.round((v - inteiro) * 100)).padStart(2,'0');
+    const v      = PRECOS[p][periodoAtual];
+    const int    = Math.floor(v);
+    const cents  = String(Math.round((v - int) * 100)).padStart(2,'0');
     document.getElementById('val-' + p).innerHTML =
-      `R$ <span>${inteiro}</span><span style="font-size:22px">,${cents}</span>`;
+      `R$ <span>${int}</span><span style="font-size:22px">,${cents}</span>`;
     document.getElementById('per-' + p).textContent =
       periodoAtual === 'mensal' ? '/mês · cobrado mensalmente' : '/mês · cobrado anualmente';
     const deEl = document.getElementById('de-' + p);
     if (periodoAtual === 'anual') {
-      deEl.textContent = 'R$ ' + PRECOS[p].mensal.toFixed(2).replace('.',',');
-      deEl.style.visibility = 'visible';
+      deEl.textContent       = 'R$ ' + PRECOS[p].mensal.toFixed(2).replace('.',',');
+      deEl.style.visibility  = 'visible';
     } else {
-      deEl.style.visibility = 'hidden';
+      deEl.style.visibility  = 'hidden';
     }
   });
 }
 
 function abrirCheckout(plano) {
   planoSelecionado = plano;
-  const preco = PRECOS[plano][periodoAtual === 'anual' && plano !== 'vitalicio' ? 'anual' : 'mensal'];
+  const periodo = periodoAtual === 'anual' && plano !== 'vitalicio' ? 'anual' : 'mensal';
+  const preco   = PRECOS[plano][periodo];
+
   document.getElementById('mp-overlay').classList.add('open');
-  document.getElementById('mp-titulo').textContent = 'Assinar Plano ' + NOMES_PLANO[plano];
+  document.getElementById('mp-titulo').textContent   = 'Assinar Plano ' + NOMES_PLANO[plano];
   document.getElementById('mp-res-plano').textContent = NOMES_PLANO[plano];
   document.getElementById('mp-res-periodo').textContent =
-    plano === 'vitalicio' ? 'Pagamento único' : (periodoAtual === 'anual' ? 'Anual' : 'Mensal');
-  document.getElementById('mp-res-total').textContent = 'R$ 0,00 (trial)';
-  // Atualizar label do botão de CC com o valor real após o trial
+    plano === 'vitalicio' ? 'Pagamento único' : (periodo === 'anual' ? 'Anual' : 'Mensal');
+  document.getElementById('mp-res-total').textContent = 'R$ 0,00 (7 dias grátis)';
   document.getElementById('btn-pagar-cc').innerHTML =
-    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
     Finalizar — após 7 dias R$ ${preco.toFixed(2).replace('.',',')}`;
+
+  mpErro('');
   selecionarMetodo('cc');
 }
 
 function fecharCheckout(e) {
   if (e && e.target !== document.getElementById('mp-overlay')) return;
   document.getElementById('mp-overlay').classList.remove('open');
+  mpErro('');
 }
 
 function selecionarMetodo(met) {
@@ -2099,57 +2658,317 @@ function selecionarMetodo(met) {
     document.getElementById('met-' + m).classList.toggle('ativo', m === met);
     document.getElementById('form-' + m).style.display = m === met ? 'block' : 'none';
   });
+  mpErro('');
 }
 
+// ══════════════════════════════════════════════════════════════
+// PROCESSAR PAGAMENTO — chama o backend real
+// ══════════════════════════════════════════════════════════════
 async function processarPagamento(metodo) {
-  const btn = metodo === 'cc' ? document.getElementById('btn-pagar-cc') : null;
-  if (btn) { btn.textContent = '⏳ Processando...'; btn.disabled = true; }
+  mpErro('');
 
-  // Em produção: substituir pela chamada real ao backend do Mercado Pago
-  // Exemplo de endpoint: POST /mp/criar-preferencia  com { plano, metodo, email }
-  // Retorna: { init_point } para Checkout Pro, ou { qr_code, pix_copy } para Pix
+  // ── Coleta dados comuns ──
+  const email = (document.getElementById('mp-email-pag')?.value || '').trim();
 
-  await new Promise(r => setTimeout(r, 1800)); // simula latência
+  // ── Validações por método ──
+  if (metodo === 'cc') {
+    const num  = document.getElementById('mp-num-cartao').value.replace(/\s/g,'');
+    const nome = document.getElementById('mp-nome-cartao').value.trim();
+    const val  = document.getElementById('mp-validade').value;
+    const cvv  = document.getElementById('mp-cvv').value;
+    const cpf  = document.getElementById('mp-cpf').value.replace(/\D/g,'');
 
-  if (metodo === 'mp') {
-    // Redireciona para o Checkout Pro do Mercado Pago
-    const MP_CHECKOUT_URL = 'https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=SEU_PLAN_ID';
-    window.open(MP_CHECKOUT_URL, '_blank');
-    fecharCheckout({ target: document.getElementById('mp-overlay') });
-    showToast('🔗 Redirecionando para o Mercado Pago...');
+    if (!email || !email.includes('@'))            { mpErro('Digite seu e-mail.'); return; }
+    if (!num || !luhn(num))                        { mpErro('Número do cartão inválido.'); return; }
+    if (nome.split(' ').filter(Boolean).length < 2){ mpErro('Digite o nome completo do titular.'); return; }
+    const [mm, aa] = val.split('/');
+    const agora = new Date();
+    if (!mm || !aa || parseInt(aa) < agora.getFullYear()%100 ||
+       (parseInt(aa) === agora.getFullYear()%100 && parseInt(mm) < agora.getMonth()+1))
+                                                   { mpErro('Cartão vencido ou data inválida.'); return; }
+    if (cvv.length < 3)                            { mpErro('CVV inválido.'); return; }
+    if (!validarCPF(cpf))                          { mpErro('CPF inválido.'); return; }
+
+    setBtnLoading('btn-pagar-cc', true);
+
+    try {
+      if (!mp) throw new Error('SDK do Mercado Pago não inicializado. Verifique o backend.');
+
+      // 1️⃣ Tokeniza o cartão no frontend (nunca enviamos dados brutos ao servidor)
+      const token = await mp.createCardToken({
+        cardNumber:      num,
+        cardholderName:  nome,
+        cardExpirationMonth: mm,
+        cardExpirationYear:  '20' + aa,
+        securityCode:    cvv,
+        identificationType:  'CPF',
+        identificationNumber: cpf,
+      });
+
+      // 2️⃣ Envia só o token para o backend
+      const parcelas = document.getElementById('mp-parcelas')?.value || '1';
+      const resp = await fetch(BACKEND_URL + '/mp/pagar-cartao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token:           token.id,
+          paymentMethodId: token.payment_method_id,
+          plano:           planoSelecionado,
+          periodo:         periodoAtual,
+          email, cpf, parcelas
+        })
+      });
+      const data = await resp.json();
+
+      if (data.status === 'aprovado') {
+        fecharCheckout({ target: document.getElementById('mp-overlay') });
+        mostrarSucesso('✅ Pagamento aprovado! Bem-vindo ao Plano ' + NOMES_PLANO[planoSelecionado] + '!');
+      } else if (data.status === 'pendente') {
+        fecharCheckout({ target: document.getElementById('mp-overlay') });
+        showToast('⏳ ' + data.mensagem);
+      } else {
+        mpErro(data.mensagem || data.erro || 'Pagamento recusado. Tente outro cartão.');
+      }
+
+    } catch(e) {
+      mpErro(e.message || 'Erro ao processar. Verifique os dados e tente novamente.');
+    } finally {
+      setBtnLoading('btn-pagar-cc', false);
+    }
     return;
   }
 
+  // ── PIX ──
+  if (metodo === 'pix') {
+    const cpf  = document.getElementById('mp-cpf-pix')?.value.replace(/\D/g,'') || '';
+    const nome = document.getElementById('mp-nome-pix')?.value.trim() || 'Cliente';
+    const emailPix = document.getElementById('mp-email-pag')?.value.trim() || email;
+    if (!emailPix || !emailPix.includes('@')) { mpErro('Digite seu e-mail para o Pix.'); return; }
+    if (!validarCPF(cpf))              { mpErro('CPF inválido.'); return; }
+
+    setBtnLoading('btn-pagar-pix', true);
+    try {
+      const resp = await fetch(BACKEND_URL + '/mp/gerar-pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plano: planoSelecionado, periodo: periodoAtual, email: emailPix, cpf, nome })
+      });
+      const data = await resp.json();
+      if (data.erro) { mpErro(data.erro); return; }
+
+      // Exibe QR Code e copia-e-cola
+      document.getElementById('mp-pix-resultado').style.display = 'block';
+      document.getElementById('mp-pix-qr').innerHTML =
+        data.qrCodeBase64
+          ? `<img src="data:image/png;base64,${data.qrCodeBase64}" style="width:130px;height:130px;border-radius:8px">`
+          : '⚡';
+      document.getElementById('mp-pix-chave').textContent = data.copiaCola;
+      document.getElementById('mp-pix-chave').style.color = 'var(--cyan)';
+      document.getElementById('mp-pix-expira').textContent =
+        `QR Code válido por ${data.expiraEm} minutos`;
+      document.getElementById('mp-pix-id').value = data.id;
+
+      // Inicia polling para verificar pagamento
+      iniciarPollingPix(data.id, email);
+    } catch(e) {
+      mpErro('Erro ao gerar Pix. Verifique o backend: ' + e.message);
+    } finally {
+      setBtnLoading('btn-pagar-pix', false);
+    }
+    return;
+  }
+
+  // ── BOLETO ──
   if (metodo === 'boleto') {
-    showToast('📄 Boleto gerado! Verifique seu e-mail.');
-    fecharCheckout({ target: document.getElementById('mp-overlay') });
+    const cpf  = document.getElementById('mp-cpf-boleto').value.replace(/\D/g,'');
+    const nome = document.getElementById('mp-nome-boleto')?.value.trim() || 'Cliente';
+    const emailBoleto = document.getElementById('mp-email-boleto')?.value.trim() || '';
+    if (!emailBoleto || !emailBoleto.includes('@')) { mpErro('Digite seu e-mail para o boleto.'); return; }
+    if (!validarCPF(cpf))              { mpErro('CPF inválido.'); return; }
+
+    setBtnLoading('btn-pagar-boleto', true);
+    try {
+      const resp = await fetch(BACKEND_URL + '/mp/gerar-boleto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plano: planoSelecionado, periodo: periodoAtual, email: emailBoleto, cpf, nome })
+      });
+      const data = await resp.json();
+      if (data.erro) { mpErro(data.erro); return; }
+
+      // Abre o boleto em nova aba
+      if (data.urlBoleto) window.open(data.urlBoleto, '_blank');
+      fecharCheckout({ target: document.getElementById('mp-overlay') });
+      showToast('📄 Boleto gerado! Abriu em nova aba e será enviado ao seu e-mail.');
+    } catch(e) {
+      mpErro('Erro ao gerar boleto: ' + e.message);
+    } finally {
+      setBtnLoading('btn-pagar-boleto', false);
+    }
     return;
   }
 
-  // Cartão / Pix — exibe tela de sucesso
-  fecharCheckout({ target: document.getElementById('mp-overlay') });
-  showToast('✅ Pagamento realizado! Acesso liberado. Bem-vindo ao ' + NOMES_PLANO[planoSelecionado] + '!');
-  if (btn) { btn.textContent = 'Finalizar pagamento'; btn.disabled = false; }
+  // ── MERCADO PAGO CHECKOUT PRO ──
+  if (metodo === 'mp') {
+    setBtnLoading('btn-pagar-mp', true);
+    try {
+      const resp = await fetch(BACKEND_URL + '/mp/assinar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plano: planoSelecionado, periodo: periodoAtual, email: email || 'cliente@email.com' })
+      });
+      const data = await resp.json();
+      if (data.erro) { mpErro(data.erro); return; }
+      // Se o backend retornou URL de redirecionamento
+      if (data.checkoutUrl) { window.open(data.checkoutUrl, '_blank'); }
+      fecharCheckout({ target: document.getElementById('mp-overlay') });
+      showToast('🔗 Redirecionando para o Mercado Pago...');
+    } catch(e) {
+      mpErro('Backend offline: ' + e.message);
+    } finally {
+      setBtnLoading('btn-pagar-mp', false);
+    }
+  }
+}
+
+// ── Polling Pix (verifica aprovação a cada 5s por até 10 min) ──
+let _pixInterval = null;
+function iniciarPollingPix(pagamentoId, email) {
+  let tentativas = 0;
+  if (_pixInterval) clearInterval(_pixInterval);
+  _pixInterval = setInterval(async () => {
+    tentativas++;
+    if (tentativas > 120) { clearInterval(_pixInterval); return; } // 10 min
+    try {
+      const r    = await fetch(BACKEND_URL + '/mp/status/' + pagamentoId);
+      const data = await r.json();
+      if (data.status === 'approved') {
+        clearInterval(_pixInterval);
+        fecharCheckout({ target: document.getElementById('mp-overlay') });
+        mostrarSucesso('✅ Pix recebido! Acesso ao Plano ' + NOMES_PLANO[planoSelecionado] + ' liberado!');
+      }
+    } catch(_) {}
+  }, 5000);
+}
+
+function mostrarSucesso(msg) {
+  showToast(msg);
+  // Opcional: redirecionar para o simulado após sucesso
+  setTimeout(() => showPage('simulado'), 1500);
+}
+
+// ── UI helpers ──
+function setBtnLoading(id, loading) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  if (loading) {
+    btn.dataset.original = btn.innerHTML;
+    btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle"></span> Processando...';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = btn.dataset.original || btn.innerHTML;
+    btn.disabled  = false;
+  }
+}
+
+function mpErro(msg) {
+  let el = document.getElementById('mp-erro');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'mp-erro';
+    el.style.cssText = 'background:rgba(255,78,78,.1);border:1px solid rgba(255,78,78,.3);color:#FF6B6B;font-size:13px;padding:10px 14px;border-radius:9px;margin-bottom:12px;display:none;text-align:center;transition:all .2s';
+    const body = document.querySelector('.mp-body');
+    if (body) body.insertBefore(el, body.firstChild);
+  }
+  if (!msg) { el.style.display = 'none'; return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── Algoritmo de Luhn ──
+function luhn(num) {
+  let soma = 0, alt = false;
+  for (let i = num.length-1; i >= 0; i--) {
+    let d = parseInt(num[i]);
+    if (isNaN(d)) return false;
+    if (alt) { d *= 2; if (d > 9) d -= 9; }
+    soma += d; alt = !alt;
+  }
+  return soma % 10 === 0 && num.length >= 13;
+}
+
+// ── Validação de CPF ──
+function validarCPF(cpf) {
+  cpf = cpf.replace(/\D/g,'');
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0, resto;
+  for (let i=1;i<=9;i++) soma += parseInt(cpf[i-1])*(11-i);
+  resto = (soma*10)%11; if(resto===10||resto===11) resto=0;
+  if(resto!==parseInt(cpf[9])) return false;
+  soma=0;
+  for(let i=1;i<=10;i++) soma += parseInt(cpf[i-1])*(12-i);
+  resto=(soma*10)%11; if(resto===10||resto===11) resto=0;
+  return resto===parseInt(cpf[10]);
+}
+
+// ── Detecção de bandeira ──
+function detectarBandeira(num) {
+  const n = num.replace(/\s/g,'');
+  if (/^4/.test(n))                     return { nome:'Visa',       cor:'#1A1F71' };
+  if (/^5[1-5]|^2[2-7]/.test(n))       return { nome:'Mastercard', cor:'#EB001B' };
+  if (/^3[47]/.test(n))                 return { nome:'Amex',       cor:'#007BC1' };
+  if (/^606282|^3841|^637095/.test(n))  return { nome:'Hipercard',  cor:'#B3131A' };
+  if (/^4011|^4312|^5041|^6363|^650/.test(n)) return { nome:'Elo', cor:'#FFD700' };
+  return null;
+}
+
+function atualizarBandeira(input) {
+  let badge = document.getElementById('mp-bandeira');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'mp-bandeira';
+    badge.style.cssText = 'font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;margin-left:8px;transition:all .2s';
+    const label = input.closest('.mp-field')?.querySelector('label');
+    if (label) label.appendChild(badge);
+  }
+  const band = detectarBandeira(input.value);
+  if (band && input.value.replace(/\s/g,'').length >= 4) {
+    badge.textContent       = band.nome;
+    badge.style.background  = band.cor + '22';
+    badge.style.color       = band.cor;
+    badge.style.border      = '1px solid ' + band.cor + '55';
+  } else {
+    badge.textContent = ''; badge.style.cssText += ';border:none;background:none';
+  }
 }
 
 function copiarPix() {
-  const chave = document.getElementById('mp-pix-chave').textContent;
-  navigator.clipboard.writeText(chave).then(() => showToast('✅ Chave Pix copiada!')).catch(() => {
-    const el = document.getElementById('mp-pix-chave');
-    const range = document.createRange(); range.selectNode(el);
-    window.getSelection().removeAllRanges(); window.getSelection().addRange(range);
-    document.execCommand('copy'); showToast('✅ Chave Pix copiada!');
-  });
+  const chave = document.getElementById('mp-pix-chave').textContent.trim();
+  if (!chave || chave.includes('⚠️') || chave.includes('Configure')) {
+    showToast('⚠️ Gere o Pix primeiro.'); return;
+  }
+  navigator.clipboard.writeText(chave)
+    .then(() => showToast('✅ Chave Pix copiada!'))
+    .catch(() => {
+      const el = document.getElementById('mp-pix-chave');
+      const r = document.createRange(); r.selectNode(el);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(r);
+      document.execCommand('copy');
+      showToast('✅ Copiado!');
+    });
 }
 
 // ── Formatações ──
 function formatarCartao(el) {
   let v = el.value.replace(/\D/g,'').substring(0,16);
   el.value = v.replace(/(.{4})/g,'$1 ').trim();
+  atualizarBandeira(el);
 }
 function formatarValidade(el) {
   let v = el.value.replace(/\D/g,'').substring(0,4);
-  if (v.length >= 3) v = v.substring(0,2) + '/' + v.substring(2);
+  if (v.length >= 3) v = v.substring(0,2)+'/'+v.substring(2);
   el.value = v;
 }
 function formatarCPF(el) {
@@ -2165,6 +2984,7 @@ function toggleFaq(el) {
   const aberto = a.classList.toggle('open');
   seta.textContent = aberto ? '−' : '+';
 }
+
 
 // ── showPage precisa reconhecer 'planos' ──
 // (a função showPage já existe no arquivo, basta a página ter id="page-planos")
