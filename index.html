@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ConcursoIA++ — Simulados com Inteligência Artificial</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- ══ MERCADO PAGO SDK ══ -->
-<script src="https://sdk.mercadopago.com/js/v2"></script>
 <style>
 :root{
   --bg:#07080F;--bg2:#0D0F1A;--bg3:#13152200;--card:#0F1120;
@@ -2586,18 +2583,41 @@ const PRECOS = {
 };
 const NOMES_PLANO = { basico:'Básico', pro:'Pro', vitalicio:'Vitalício' };
 
-// Inicializa SDK do MP buscando a public key do backend
-async function initMP() {
-  try {
-    const r = await fetch(BACKEND_URL + '/mp/public-key');
-    if (!r.ok) throw new Error('Backend offline');
-    const { publicKey } = await r.json();
-    mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
-    console.info('[MP] SDK inicializado ✅');
-  } catch (e) {
-    console.warn('[MP] Backend indisponível — pagamentos desativados:', e.message);
-  }
+// Inicializa SDK do MP com a Public Key direta (sem precisar buscar do backend)
+const MP_PUBLIC_KEY_DIRECT = 'TEST-2e7e84bf-0de9-4f5d-bf38-20181ce2844a';
+
+function initMP() {
+  return new Promise((resolve) => {
+    if (typeof MercadoPago !== 'undefined') {
+      try {
+        mp = new MercadoPago(MP_PUBLIC_KEY_DIRECT, { locale: 'pt-BR' });
+        console.info('[MP] SDK inicializado ✅');
+      } catch(e) {
+        console.warn('[MP] Erro ao inicializar SDK:', e.message);
+      }
+      resolve();
+      return;
+    }
+    // Carrega o SDK dinamicamente
+    const script = document.createElement('script');
+    script.src = 'https://sdk.mercadopago.com/js/v2';
+    script.onload = () => {
+      try {
+        mp = new MercadoPago(MP_PUBLIC_KEY_DIRECT, { locale: 'pt-BR' });
+        console.info('[MP] SDK carregado e inicializado ✅');
+      } catch(e) {
+        console.warn('[MP] Erro ao inicializar SDK:', e.message);
+      }
+      resolve();
+    };
+    script.onerror = () => {
+      console.warn('[MP] Falha ao carregar SDK — cartão indisponível');
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
 }
+initMP();
 initMP();
 
 // ── Toggle mensal/anual ──
